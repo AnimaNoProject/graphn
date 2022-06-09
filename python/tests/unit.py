@@ -67,6 +67,15 @@ class TestGraphnFunctions(unittest.TestCase):
 
         self.assertEqual(4, graphn.ggd(b, c, self.dist_fun))
 
+        d = nx.Graph()
+        d.add_node(0, pos=np.asarray([2, 0]))
+        d.add_node(2, pos=np.asarray([0, 0]))
+        d.add_edge(2, 0)
+        self.assertEqual(1, graphn.ggd(a, d, self.dist_fun, 1))
+        self.assertEqual(2, graphn.ggd(a, d, self.dist_fun, 2))
+        self.assertEqual(2, graphn.ggd(a, d, self.dist_fun, 4, 1))   # cost smaller to exchange edges
+        self.assertEqual(4, graphn.ggd(a, d, self.dist_fun, 4, 10))  # exchange edge cost too high
+
     def testGGDReturnsMaxCostIfOneGraphEmpty(self) -> None:
         a = nx.Graph()
         a.add_node(0, pos=np.asarray([1, 0]))
