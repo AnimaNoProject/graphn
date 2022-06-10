@@ -97,7 +97,6 @@ def marked_subgraph_isomorphism(G_a: nx.Graph, G_b: nx.Graph, getOrderedNeighbou
                     if len(code) == len(code_ga[0]):
                         break
 
-            print(code)
             # if codes are not equal, check the next edge
             if code != code_ga[0]:
                 continue

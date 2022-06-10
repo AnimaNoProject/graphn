@@ -1,5 +1,5 @@
 import unittest
-import graphn
+from graphn import graphn
 import networkx as nx
 import numpy as np
 from functools import cmp_to_key
@@ -59,7 +59,7 @@ class TestGraphnFunctions(unittest.TestCase):
 
         return ordered_neighbours
 
-    def testGraphEncodingShouldGiveCorrectCode(self) -> None:
+    def test_GraphEncodingShouldGiveCorrectCode(self) -> None:
         a = nx.Graph()
         a.add_node(11, pos=np.asarray([1, 1]))
         a.add_node(12, pos=np.asarray([2, 1]))
@@ -79,7 +79,7 @@ class TestGraphnFunctions(unittest.TestCase):
 
         self.assertEqual("2314536758", graphn.generate_graph_code(a, self.ordered_neighbours)[0])
 
-    def testMarkedSubGraphIsomorphismShouldGiveCorrectResult(self) -> None:
+    def test_MarkedSubGraphIsomorphismShouldGiveCorrectResult(self) -> None:
         a = nx.Graph()
         a.add_node(11, pos=np.asarray([1, 1]))
         a.add_node(12, pos=np.asarray([2, 1]))
@@ -143,7 +143,7 @@ class TestGraphnFunctions(unittest.TestCase):
 
         self.assertTrue(graphn.marked_subgraph_isomorphism(b, c, self.ordered_neighbours))
 
-    def testGGDReturns0ForIsomorphicGraphs(self) -> None:
+    def test_GGDReturns0ForIsomorphicGraphs(self) -> None:
         a = nx.Graph()
         a.add_node(0, pos=np.asarray([1, 0]))
         a.add_node(1, pos=np.asarray([2, 0]))
@@ -164,7 +164,7 @@ class TestGraphnFunctions(unittest.TestCase):
 
         self.assertEqual(graphn.ggd(a, c, self.dist_fun), 0)
 
-    def testGGDReturnCorrectDistance(self) -> None:
+    def test_GGDReturnCorrectDistance(self) -> None:
         a = nx.Graph()
         a.add_node(0, pos=np.asarray([1, 0]))
         a.add_node(1, pos=np.asarray([2, 0]))
@@ -201,10 +201,10 @@ class TestGraphnFunctions(unittest.TestCase):
         d.add_edge(2, 0)
         self.assertEqual(1, graphn.ggd(a, d, self.dist_fun, 1))
         self.assertEqual(2, graphn.ggd(a, d, self.dist_fun, 2))
-        self.assertEqual(2, graphn.ggd(a, d, self.dist_fun, 4, 1))   # cost smaller to exchange edges
+        self.assertEqual(2, graphn.ggd(a, d, self.dist_fun, 4, 1))  # cost smaller to exchange edges
         self.assertEqual(4, graphn.ggd(a, d, self.dist_fun, 4, 10))  # exchange edge cost too high
 
-    def testGGDReturnsMaxCostIfOneGraphEmpty(self) -> None:
+    def test_GGDReturnsMaxCostIfOneGraphEmpty(self) -> None:
         a = nx.Graph()
         a.add_node(0, pos=np.asarray([1, 0]))
         a.add_node(1, pos=np.asarray([2, 0]))
@@ -214,4 +214,3 @@ class TestGraphnFunctions(unittest.TestCase):
 
         b = nx.Graph()
         self.assertEqual(np.inf, graphn.ggd(a, b, self.dist_fun))
-
