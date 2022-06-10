@@ -1,15 +1,68 @@
 import cvxpy as cp
 import numpy as np
 import networkx as nx
+from collections import deque
 
 
-def marked_subgraph_isomorphism(g1: nx.OrderedGraph, g2: nx.OrderedGraph) -> bool:
+def generate_graph_code(graph: nx.Graph, getOrderedNeighbours) -> str:
     """
-    Implementation of the paper ["Marked Subgraph Isomorphism of Ordered Graphs" by Xiaoyi and Bunke](https://link.springer.com/content/pdf/10.1007%2FBFb0033230.pdf)
-    :param g1: Ordered Graph that is checked if it is a subgraph of g2
-    :param g2: Ordered Graph
-    :return:
+    @brief Calculates the code for G1 according to [Marked Subgraph Isomorphism of Ordered Graphs]
+    (https://link.springer.com/content/pdf/10.1007%2FBFb0033230.pdf) by Xiaoyi and Bunke.
+    @param graph Graph that is encoded
+    @param getOrderedNeighbours Function (graph, node, start_node) that returns an ordered list of ids
+    of neighbour nodes of a given node (starting at the given start_node).
+    @return Code of the given graph
     """
+    num_nodes = len(graph.nodes)
+    q = deque()
+    relabel_id = 1
+    labels = np.zeros(num_nodes, dtype=int)
+    s = []
+    code = ""
+    used_nodes = np.zeros(num_nodes)
+    for a in graph.nodes:
+        # pick the first inner edge we find and set the initial inner vertex to true
+        if len(graph.edges(a)) > 1:
+            edges = graph.edges(a)
+            for e in edges:
+                q.append(e)
+                break
+            used_nodes[a] = True
+            labels[a] = 1
+            break
+
+    # first iteration:
+    # Q = {vi, vj}, vi = initial (inner node)
+    while len(q) > 0:
+        v_i, v_j = q.pop()
+        ordered_neighbours = getOrderedNeighbours(graph, v_i, v_j)
+        for v_k in ordered_neighbours:
+            s.append(v_k)
+            if not used_nodes[v_k]:
+                used_nodes[v_k] = True
+                relabel_id += 1
+                labels[v_k] = relabel_id
+                if len(graph.edges(v_k)) > 1:
+                    edges = graph.edges(v_k)
+                    for e in edges:
+                        q.append(e)
+                        break
+
+    for node in s:
+        code += str(labels[node])
+
+    return code
+
+
+def marked_subgraph_isomorphism(G_a: nx.Graph, G_b: nx.Graph) -> bool:
+    """
+    @brief Implementation of the paper [Marked Subgraph Isomorphism of Ordered Graphs]
+    (https://link.springer.com/content/pdf/10.1007%2FBFb0033230.pdf) by Xiaoyi and Bunke.
+    @param G_a Graph that is checked if it is a subgraph of G_b
+    @param G_b Graph
+    @return True if G_a is an isomorphic subgraph of G_b
+    """
+
     return True
 
 
@@ -24,12 +77,13 @@ def ggd(G_a: nx.Graph, G_b: nx.Graph, dist_func, c_n=1.0, c_e=1.0, verbose=False
     @param c_e Cost for edge operations
     @param c_n Cost for vertex operations
     @param verbose Verbose option for solver
-    @returns Geometric Graph Distance, if any of the graphs is empty returns inf
+    @return Geometric Graph Distance, if any of the graphs is empty (no nodes or edges) returns inf TODO return full
+    cost of moving a to b
     """
     an = len(G_a.nodes)
     bn = len(G_b.nodes)
 
-    if an == 0 or bn == 0:
+    if an == 0 or bn == 0 or len(G_a.edges) == 0 or len(G_b.edges) == 0:
         return np.inf
 
     len_uv = []
