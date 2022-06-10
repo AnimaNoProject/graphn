@@ -4,22 +4,23 @@ import networkx as nx
 from collections import deque
 
 
-def generate_graph_code(graph: nx.Graph, getOrderedNeighbours) -> str:
+def generate_graph_code(graph: nx.Graph, getOrderedNeighbours) -> (str, dict, dict):
     """
-    @brief Calculates the code for G1 according to [Marked Subgraph Isomorphism of Ordered Graphs]
-    (https://link.springer.com/content/pdf/10.1007%2FBFb0033230.pdf) by Xiaoyi and Bunke.
+    @brief Calculates the code for the Graph according (that is searched for in the second graph)
+     to [Marked Subgraph Isomorphism of Ordered Graphs](https://link.springer.com/content/pdf/10.1007%2FBFb0033230.pdf)
+     by Xiaoyi and Bunke.
     @param graph Graph that is encoded
     @param getOrderedNeighbours Function (graph, node, start_node) that returns an ordered list of ids
     of neighbour nodes of a given node (starting at the given start_node).
-    @return Code of the given graph
+    @return Code of the given graph, label-to-node-dictionary and node-to-label-dictionary
     """
-    num_nodes = len(graph.nodes)
     q = deque()
     relabel_id = 1
-    labels = np.zeros(num_nodes, dtype=int)
+    labelToNode = {}
+    nodeToLabel = {}
     s = []
     code = ""
-    used_nodes = np.zeros(num_nodes)
+    used_nodes = dict.fromkeys(graph.nodes, False)
     for a in graph.nodes:
         # pick the first inner edge we find and set the initial inner vertex to true
         if len(graph.edges(a)) > 1:
@@ -28,7 +29,8 @@ def generate_graph_code(graph: nx.Graph, getOrderedNeighbours) -> str:
                 q.append(e)
                 break
             used_nodes[a] = True
-            labels[a] = 1
+            nodeToLabel[a] = 1
+            labelToNode[1] = a
             break
 
     # first iteration:
@@ -41,29 +43,93 @@ def generate_graph_code(graph: nx.Graph, getOrderedNeighbours) -> str:
             if not used_nodes[v_k]:
                 used_nodes[v_k] = True
                 relabel_id += 1
-                labels[v_k] = relabel_id
+                nodeToLabel[v_k] = relabel_id
+                labelToNode[relabel_id] = v_k
                 if len(graph.edges(v_k)) > 1:
-                    edges = graph.edges(v_k)
-                    for e in edges:
-                        q.append(e)
-                        break
-
-    for node in s:
-        code += str(labels[node])
-
-    return code
+                    q.append((v_k, v_i))
+            code += str(nodeToLabel[v_k])
+    return code, labelToNode, nodeToLabel
 
 
-def marked_subgraph_isomorphism(G_a: nx.Graph, G_b: nx.Graph) -> bool:
+def marked_subgraph_isomorphism(G_a: nx.Graph, G_b: nx.Graph, getOrderedNeighbours) -> bool:
     """
     @brief Implementation of the paper [Marked Subgraph Isomorphism of Ordered Graphs]
     (https://link.springer.com/content/pdf/10.1007%2FBFb0033230.pdf) by Xiaoyi and Bunke.
     @param G_a Graph that is checked if it is a subgraph of G_b
     @param G_b Graph
+    @param getOrderedNeighbours Function (graph, node, start_node) that returns an ordered list of ids
+    of neighbour nodes of a given node (starting at the given start_node).
     @return True if G_a is an isomorphic subgraph of G_b
     """
+    code_ga = generate_graph_code(G_a, getOrderedNeighbours)
 
-    return True
+    # create a code for each directed edge v_i, v_j
+    for edge in G_b.edges:
+        # check for both u,v and v,u
+        for v_ip, v_jp in [edge, (edge[1], edge[0])]:
+            q = deque()
+            relabel_id = 1
+            labelToNode = {}
+            nodeToLabel = {}
+            used_nodes = dict.fromkeys(G_b.nodes, False)
+            s = []
+            code = ""
+            q.append((v_ip, v_jp))
+            used_nodes[v_ip] = True
+            nodeToLabel[v_ip] = 1
+            labelToNode[1] = v_ip
+
+            while len(q) > 0:
+                v_i, v_j = q.pop()
+                ordered_neighbours = getOrderedNeighbours(G_b, v_i, v_j)
+                for v_k in ordered_neighbours:
+                    s.append(v_k)
+                    if not used_nodes[v_k]:
+                        used_nodes[v_k] = True
+                        relabel_id += 1
+                        nodeToLabel[v_k] = relabel_id
+                        labelToNode[relabel_id] = v_k
+
+                        # if it is an internal vertex there, we add v_k, v_j to the queue
+                        if len(G_a.edges(code_ga[1][nodeToLabel[v_k]])) > 1:
+                            q.append((v_k, v_i))
+                    code += str(nodeToLabel[v_k])
+                    if len(code) == len(code_ga[0]):
+                        break
+
+            print(code)
+            # if codes are not equal, check the next edge
+            if code != code_ga[0]:
+                continue
+
+            # condition 1:
+            condition_met = True
+            for node_a in G_a.nodes:
+                # skip all leaves
+                deg_a = len(G_a.edges(node_a))
+                if deg_a <= 1:
+                    continue
+                if deg_a != len(G_b.edges(labelToNode[code_ga[2][node_a]])):
+                    condition_met = False
+                    break
+
+            # condition 2:
+            for u_a, v_a in G_a.edges:
+                found_match = False
+                label_u = code_ga[2][u_a]
+                label_v = code_ga[2][v_a]
+
+                for u_b, v_b in G_b.edges:
+                    if nodeToLabel[u_b] == label_u and nodeToLabel[v_b] == label_v:
+                        found_match = True
+                        break
+                if not found_match:
+                    condition_met = False
+                    break
+
+            if condition_met:
+                return True
+    return False
 
 
 def ggd(G_a: nx.Graph, G_b: nx.Graph, dist_func, c_n=1.0, c_e=1.0, verbose=False) -> float:
