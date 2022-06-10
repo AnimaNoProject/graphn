@@ -97,7 +97,7 @@ class TestGraphnFunctions(unittest.TestCase):
         a.add_edge(13, 12)
         a.add_edge(12, 16)
 
-        # self.assertTrue(graphn.marked_subgraph_isomorphism(a, a, self.ordered_neighbours))
+        self.assertTrue(graphn.marked_subgraph_isomorphism(a, a, self.ordered_neighbours))
 
         b = nx.Graph()
         b.add_node(21, pos=np.asarray([1, 1]))
@@ -117,7 +117,31 @@ class TestGraphnFunctions(unittest.TestCase):
         b.add_edge(22, 26)
         b.add_edge(21, 22)
 
-        self.assertTrue(graphn.marked_subgraph_isomorphism(a, b, self.ordered_neighbours))
+        self.assertFalse(graphn.marked_subgraph_isomorphism(b, a, self.ordered_neighbours))
+
+        c = nx.Graph()
+        c.add_node(31, pos=np.asarray([1, 1]))
+        c.add_node(32, pos=np.asarray([2, 1]))
+        c.add_node(33, pos=np.asarray([2, 2]))
+        c.add_node(34, pos=np.asarray([1, 2]))
+        c.add_node(35, pos=np.asarray([0, 0]))
+        c.add_node(36, pos=np.asarray([3, 0]))
+        c.add_node(37, pos=np.asarray([3, 3]))
+        c.add_node(38, pos=np.asarray([0, 3]))
+        c.add_edge(35, 31)
+        c.add_edge(31, 34)
+        c.add_edge(34, 38)
+        c.add_edge(34, 33)
+        c.add_edge(33, 37)
+        c.add_edge(33, 32)
+        c.add_edge(32, 36)
+        c.add_edge(31, 32)
+        c.add_edge(35, 36)
+        c.add_edge(36, 37)
+        c.add_edge(37, 38)
+        c.add_edge(38, 35)
+
+        self.assertTrue(graphn.marked_subgraph_isomorphism(b, c, self.ordered_neighbours))
 
     def testGGDReturns0ForIsomorphicGraphs(self) -> None:
         a = nx.Graph()
