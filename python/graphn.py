@@ -161,10 +161,10 @@ def ggd(G_a: nx.Graph, G_b: nx.Graph, dist_func, c_n=1.0, c_e=1.0, verbose=False
         for b, dB in G_b.nodes(data=True):
             len_uv.append(dist_func(dA, dB))
 
-    len_e = [dist_func(G_a.nodes[u], G_a.nodes[v]) for u, v in G_a.edges]        # length of edges
+    len_e = [dist_func(G_a.nodes[u], G_a.nodes[v]) for u, v in G_a.edges]  # length of edges
     len_e_prime = [dist_func(G_b.nodes[u], G_b.nodes[v]) for u, v in G_b.edges]  # length of other edges
 
-    L_i = [[u, v] for u, v in G_a.edges]   # indices of u,v for e
+    L_i = [[u, v] for u, v in G_a.edges]  # indices of u,v for e
     L_ip = [[u, v] for u, v in G_b.edges]  # indices for u,v for e'
 
     L_UV = cp.Constant(len_uv)

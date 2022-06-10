@@ -4,3 +4,4 @@ setuptools==62.2.0
 wheel==0.37.1
 numpy~=1.21.3
 cvxpy~=1.1.17
+cvxopt~=1.2.7
