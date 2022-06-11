@@ -67,7 +67,12 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-`TODO`
+Purpose is to provide `networkx` impelementation for graph algorithms.
+
+Currently implemented papers:
+* [Marked Subgraph Isomorphism of Ordered Graphs](https://link.springer.com/content/pdf/10.1007%2FBFb0033230.pdf) by Xiaoyi and Bunke
+* Geometric Graph Distance (for small graphs) [Measuring the Similarity of Geometric Graphs](https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.206.900&rep=rep1&type=pdf) by Cheong et al
+     
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
