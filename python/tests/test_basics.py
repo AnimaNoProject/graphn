@@ -14,7 +14,7 @@ class TestGraphnFunctions(unittest.TestCase):
         pass
 
     def dist(self, dA, dB):
-        return abs(np.linalg.norm(dA - dB))
+        return int(abs(np.linalg.norm(dA - dB)))
 
     def dist_fun(self, dA, dB):
         return self.dist(dA['pos'], dB['pos'])
@@ -205,6 +205,27 @@ class TestGraphnFunctions(unittest.TestCase):
         self.assertEqual(4, graphn.ggd(a, d, self.dist_fun, 2))
         self.assertEqual(4, graphn.ggd(a, d, self.dist_fun, 4, 1))
         self.assertEqual(24, graphn.ggd(a, d, self.dist_fun, 4, 10))
+
+        t = nx.Graph()
+
+        t.add_node(0, pos=np.asarray([0, 0], dtype=np.int))
+        t.add_node(1, pos=np.asarray([10, 0], dtype=np.int))
+        t.add_node(2, pos=np.asarray([5, 10], dtype=np.int))
+        t.add_node(3, pos=np.asarray([5, 20], dtype=np.int))
+        t.add_node(4, pos=np.asarray([5, 25], dtype=np.int))
+        t.add_node(5, pos=np.asarray([0, 28], dtype=np.int))
+        t.add_node(6, pos=np.asarray([10, 28], dtype=np.int))
+
+        t.add_edge(0, 2)
+        t.add_edge(1, 2)
+        t.add_edge(2, 3)
+        t.add_edge(3, 4)
+        t.add_edge(3, 5)
+        t.add_edge(3, 6)
+
+        self.assertEqual(0, graphn.ggd(t, t, self.dist_fun))
+
+
 
     def test_GGDReturnsMaxCostIfOneGraphEmpty(self) -> None:
         a = nx.Graph()
