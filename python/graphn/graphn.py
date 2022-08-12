@@ -131,7 +131,7 @@ def marked_subgraph_isomorphism(G_a: nx.Graph, G_b: nx.Graph, getOrderedNeighbou
     return False
 
 
-def ggd(G_a: nx.Graph, G_b: nx.Graph, dist_func, c_n=1.0, c_e=1.0, verbose=False) -> float:
+def ggd(G_a: nx.Graph, G_b: nx.Graph, dist_func, c_n=1.0, c_e=1.0, verbose=False, eps=1e-5, max_iters=1000) -> float:
     """
     @brief Calculates the geometric graph distance
     between two (small) graphs a and b based on the paper [Measuring the Similarity of Geometric Graphs]
@@ -142,6 +142,8 @@ def ggd(G_a: nx.Graph, G_b: nx.Graph, dist_func, c_n=1.0, c_e=1.0, verbose=False
     @param c_e Cost for edge operations
     @param c_n Cost for vertex operations
     @param verbose Verbose option for solver
+    @param eps Epsilon value for optimisation
+    @param max_iters Maximum iterations for optimisation
     @return Geometric Graph Distance, if any of the graphs is empty (no nodes or edges) returns inf TODO return full
     cost of moving a to b
     """
@@ -160,11 +162,12 @@ def ggd(G_a: nx.Graph, G_b: nx.Graph, dist_func, c_n=1.0, c_e=1.0, verbose=False
         for b, dB in G_b.nodes(data=True):
             len_uv.append(dist_func(dA, dB))
 
+
     len_e = [dist_func(G_a.nodes[u], G_a.nodes[v]) for u, v in G_a.edges]  # length of edges
     len_e_prime = [dist_func(G_b.nodes[u], G_b.nodes[v]) for u, v in G_b.edges]  # length of other edges
 
     L_i = [[u, v] for u, v in G_a.edges]  # indices of u,v for e
-    L_ip = [[u, v] for u, v in G_b.edges]  # indices for u,v for e'
+    L_ip = [[u, v] for u, v in G_b.edges]  # indices for u',v' for e'
 
     L_UV = cp.Constant(len_uv)
     L_E = cp.Constant(sum(len_e))
@@ -180,25 +183,28 @@ def ggd(G_a: nx.Graph, G_b: nx.Graph, dist_func, c_n=1.0, c_e=1.0, verbose=False
     # EEe -> e1e3, e1e4, e2e3, e2e4
     for e in len_e:
         for ep in len_e_prime:
-            tmp.append(int(e + ep - abs(e - ep)))
+            tmp.append(e + ep - abs(e - ep))
     C_EEP = cp.Constant(tmp)  # cost modifier |e| + |e'| - ||e| - |e'|| in objective
 
     constraints = []
 
     # for each $$u \in V_A sum_{v \in V_B}{V_{uv} \leq 1}$$
     for i in range(an):
-        constraints += [cp.sum(Vuv[i * bn::(i + 1) * bn]) <= 1]
+        constraints += [cp.sum(Vuv[i * bn:(i + 1) * bn]) <= 1]
 
     # for each $$v \in V_B sum_{u \in V_A}{V_{uv} \leq 1}$$
     for i in range(bn):
-        constraints += [cp.sum(Vuv[i:an:]) <= 1]
+        constraints += [cp.sum(Vuv[i::bn]) <= 1]
 
     # c3 = []  # $$e = (u,v) and e' = (u', v'), E_{ee'} \leq 1/2 * (Vuu' + Vvv' + Vuv' + Vvu')$$
-    for i in range(len(len_e)):
+    for i in range(len(len_e) * len(len_e_prime)):
         ia = int(i / len(G_b.edges))
         ib = i % len(G_b.edges)
-        constraints += [Eee[i] <= 0.5 * (
-                Vuv[bn * L_i[ia][0]] + Vuv[L_ip[ib][0]] + Vuv[bn * L_i[ia][1]] + Vuv[L_ip[ib][1]])]
+        u = L_i[ia][0]
+        v = L_i[ia][1]
+        up = L_ip[ib][0]
+        vp = L_ip[ib][1]
+        constraints += [Eee[i] <= 0.5 * (Vuv[u * bn + up] + Vuv[v * bn + vp] + Vuv[u * bn + vp] + Vuv[v * bn + up])]
 
     objective = cp.Minimize(
         C_V * cp.sum(cp.multiply(L_UV, Vuv))
@@ -206,6 +212,6 @@ def ggd(G_a: nx.Graph, G_b: nx.Graph, dist_func, c_n=1.0, c_e=1.0, verbose=False
         + C_E * cp.sum(L_EP)
         - C_E * (cp.sum(cp.multiply(C_EEP, Eee))))
     problem = cp.Problem(objective, constraints)
-    result = problem.solve(verbose=verbose)
+    result = problem.solve(verbose=verbose, eps=eps, max_iter=max_iters)
 
     return abs(result)
