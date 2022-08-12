@@ -14,7 +14,7 @@ class TestGraphnFunctions(unittest.TestCase):
         pass
 
     def dist(self, dA, dB):
-        return int(abs(np.linalg.norm(dA - dB)))
+        return abs(np.linalg.norm(dA - dB))
 
     def dist_fun(self, dA, dB):
         return self.dist(dA['pos'], dB['pos'])
@@ -208,13 +208,13 @@ class TestGraphnFunctions(unittest.TestCase):
 
         t = nx.Graph()
 
-        t.add_node(0, pos=np.asarray([0, 0], dtype=np.int))
-        t.add_node(1, pos=np.asarray([10, 0], dtype=np.int))
-        t.add_node(2, pos=np.asarray([5, 10], dtype=np.int))
-        t.add_node(3, pos=np.asarray([5, 20], dtype=np.int))
-        t.add_node(4, pos=np.asarray([5, 25], dtype=np.int))
-        t.add_node(5, pos=np.asarray([0, 28], dtype=np.int))
-        t.add_node(6, pos=np.asarray([10, 28], dtype=np.int))
+        t.add_node(0, pos=np.asarray([0.0, 0.0]))
+        t.add_node(1, pos=np.asarray([10.0, 0.0]))
+        t.add_node(2, pos=np.asarray([5.0, 10.0]))
+        t.add_node(3, pos=np.asarray([5.0, 20.0]))
+        t.add_node(4, pos=np.asarray([5.0, 25.0]))
+        t.add_node(5, pos=np.asarray([0.0, 28.0]))
+        t.add_node(6, pos=np.asarray([10.0, 28.0]))
 
         t.add_edge(0, 2)
         t.add_edge(1, 2)
@@ -223,7 +223,7 @@ class TestGraphnFunctions(unittest.TestCase):
         t.add_edge(3, 5)
         t.add_edge(3, 6)
 
-        self.assertEqual(0, graphn.ggd(t, t, self.dist_fun))
+        self.assertAlmostEqual(0, graphn.ggd(t, t, self.dist_fun))
 
 
 
