@@ -131,7 +131,8 @@ def marked_subgraph_isomorphism(G_a: nx.Graph, G_b: nx.Graph, getOrderedNeighbou
     return False
 
 
-def ggd(G_a: nx.Graph, G_b: nx.Graph, dist_func, c_n=1.0, c_e=1.0, verbose=False, eps=1e-5, max_iters=1000) -> float:
+def ggd(G_a: nx.Graph, G_b: nx.Graph, dist_func, c_n=1.0, c_e=1.0, verbose=False, eps=1e-5, max_iters=1000,
+        label_dist_func=None, c_l=1.0) -> float:
     """
     @brief Calculates the geometric graph distance
     between two (small) graphs a and b based on the paper [Measuring the Similarity of Geometric Graphs]
@@ -144,6 +145,8 @@ def ggd(G_a: nx.Graph, G_b: nx.Graph, dist_func, c_n=1.0, c_e=1.0, verbose=False
     @param verbose Verbose option for solver
     @param eps Epsilon value for optimisation
     @param max_iters Maximum iterations for optimisation
+    @param include_labels If a function is given, label changes are
+    @param c_l Cost for changing labels
     @return Geometric Graph Distance, if any of the graphs is empty (no nodes or edges) returns inf TODO return full
     cost of moving a to b
     """
@@ -154,6 +157,7 @@ def ggd(G_a: nx.Graph, G_b: nx.Graph, dist_func, c_n=1.0, c_e=1.0, verbose=False
         return np.inf
 
     len_uv = []
+    label_uv = []
     # Graph A = a, b, c; e1 e2
     # Graph B = x, y; e3 e4
 
@@ -161,6 +165,10 @@ def ggd(G_a: nx.Graph, G_b: nx.Graph, dist_func, c_n=1.0, c_e=1.0, verbose=False
     for a, dA in G_a.nodes(data=True):
         for b, dB in G_b.nodes(data=True):
             len_uv.append(dist_func(dA, dB))
+            if label_dist_func is not None:
+                label_uv.append(label_dist_func(dA, dB))
+            else:
+                label_uv.append(0)
 
     len_e = [dist_func(G_a.nodes[u], G_a.nodes[v]) for u, v in G_a.edges]  # length of edges
     len_e_prime = [dist_func(G_b.nodes[u], G_b.nodes[v]) for u, v in G_b.edges]  # length of other edges
@@ -205,11 +213,22 @@ def ggd(G_a: nx.Graph, G_b: nx.Graph, dist_func, c_n=1.0, c_e=1.0, verbose=False
         vp = L_ip[ib][1]
         constraints += [Eee[i] <= 0.5 * (Vuv[u * bn + up] + Vuv[v * bn + vp] + Vuv[u * bn + vp] + Vuv[v * bn + up])]
 
-    objective = cp.Minimize(
-        C_V * cp.sum(cp.multiply(L_UV, Vuv))
-        + C_E * cp.sum(L_E)
-        + C_E * cp.sum(L_EP)
-        - C_E * (cp.sum(cp.multiply(C_EEP, Eee))))
+    if label_dist_func is not None:
+        LBL_UV = cp.Constant(label_uv)
+        C_L = cp.Constant(c_l)
+        objective = cp.Minimize(
+            C_V * cp.sum(cp.multiply(L_UV, Vuv))
+            + C_E * cp.sum(L_E)
+            + C_E * cp.sum(L_EP)
+            - C_E * (cp.sum(cp.multiply(C_EEP, Eee)))
+            + C_L * (cp.sum(cp.multiply(LBL_UV, Vuv))))
+    else:
+        objective = cp.Minimize(
+            C_V * cp.sum(cp.multiply(L_UV, Vuv))
+            + C_E * cp.sum(L_E)
+            + C_E * cp.sum(L_EP)
+            - C_E * (cp.sum(cp.multiply(C_EEP, Eee))))
+
     problem = cp.Problem(objective, constraints)
     result = problem.solve(verbose=verbose, eps=eps, max_iter=max_iters)
 

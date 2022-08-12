@@ -19,6 +19,12 @@ class TestGraphnFunctions(unittest.TestCase):
     def dist_fun(self, dA, dB):
         return self.dist(dA['pos'], dB['pos'])
 
+    def label_change(self, dA, dB):
+        return abs(dA - dB)
+
+    def label_change_fun(self, dA, dB):
+        return self.label_change(dA['type'], dB['type'])
+
     def angle(self, dCenter, dA):
         x, y = dA[0] - dCenter
         angle = np.arctan2(x, y)
@@ -225,8 +231,6 @@ class TestGraphnFunctions(unittest.TestCase):
 
         self.assertAlmostEqual(0, graphn.ggd(t, t, self.dist_fun))
 
-
-
     def test_GGDReturnsMaxCostIfOneGraphEmpty(self) -> None:
         a = nx.Graph()
         a.add_node(0, pos=np.asarray([1, 0]))
@@ -237,3 +241,23 @@ class TestGraphnFunctions(unittest.TestCase):
 
         b = nx.Graph()
         self.assertEqual(np.inf, graphn.ggd(a, b, self.dist_fun))
+
+    def test_GGDReturnsCostForLabelChange(self) -> None:
+        a = nx.Graph()
+        a.add_node(0, pos=np.asarray([1, 0]), type=1)
+        a.add_node(1, pos=np.asarray([2, 0]), type=2)
+        a.add_node(2, pos=np.asarray([0, 0]), type=1)
+        a.add_edge(0, 1)
+        a.add_edge(0, 2)
+
+        self.assertEqual(0, graphn.ggd(a, a, self.dist_fun, label_dist_func=self.label_change_fun))
+
+        b = nx.Graph()
+        b.add_node(0, pos=np.asarray([1, 0]), type=2)
+        b.add_node(1, pos=np.asarray([2, 0]), type=2)
+        b.add_node(2, pos=np.asarray([0, 0]), type=2)
+        b.add_edge(0, 1)
+        b.add_edge(0, 2)
+
+        self.assertEqual(2, graphn.ggd(a, b, self.dist_fun, label_dist_func=self.label_change_fun))
+        self.assertEqual(4, graphn.ggd(a, b, self.dist_fun, label_dist_func=self.label_change_fun, c_l=2.0))
