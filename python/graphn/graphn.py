@@ -131,7 +131,7 @@ def marked_subgraph_isomorphism(G_a: nx.Graph, G_b: nx.Graph, getOrderedNeighbou
     return False
 
 
-def ggd(G_a: nx.Graph, G_b: nx.Graph, dist_func, c_n=1.0, c_e=1.0, verbose=False, esp=1e-5, ) -> float:
+def ggd(G_a: nx.Graph, G_b: nx.Graph, dist_func, c_n=1.0, c_e=1.0, verbose=False, eps=1e-5, max_iters=1000) -> float:
     """
     @brief Calculates the geometric graph distance
     between two (small) graphs a and b based on the paper [Measuring the Similarity of Geometric Graphs]
@@ -142,6 +142,8 @@ def ggd(G_a: nx.Graph, G_b: nx.Graph, dist_func, c_n=1.0, c_e=1.0, verbose=False
     @param c_e Cost for edge operations
     @param c_n Cost for vertex operations
     @param verbose Verbose option for solver
+    @param eps Epsilon value for optimisation
+    @param max_iters Maximum iterations for optimisation
     @return Geometric Graph Distance, if any of the graphs is empty (no nodes or edges) returns inf TODO return full
     cost of moving a to b
     """
@@ -210,6 +212,6 @@ def ggd(G_a: nx.Graph, G_b: nx.Graph, dist_func, c_n=1.0, c_e=1.0, verbose=False
         + C_E * cp.sum(L_EP)
         - C_E * (cp.sum(cp.multiply(C_EEP, Eee))))
     problem = cp.Problem(objective, constraints)
-    result = problem.solve(verbose=verbose, eps=1e-10, max_iter=10000)
+    result = problem.solve(verbose=verbose, eps=eps, max_iter=max_iters)
 
     return abs(result)
