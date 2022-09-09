@@ -21,9 +21,10 @@ def generate_graph_code(graph: nx.Graph, getOrderedNeighbours) -> (str, dict, di
     s = []
     code = ""
     used_nodes = dict.fromkeys(graph.nodes, False)
+    found_initial_inner_node = False
     for a in graph.nodes:
         # pick the first inner edge we find and set the initial inner vertex to true
-        if len(graph.edges(a)) > 1:
+        if len(graph.edges(a)) > 1 or len(graph.edges()) < 3:
             edges = graph.edges(a)
             for e in edges:
                 q.append(e)
@@ -31,6 +32,7 @@ def generate_graph_code(graph: nx.Graph, getOrderedNeighbours) -> (str, dict, di
             used_nodes[a] = True
             nodeToLabel[a] = 1
             labelToNode[1] = a
+            found_initial_inner_node = True
             break
 
     # first iteration:
@@ -49,6 +51,94 @@ def generate_graph_code(graph: nx.Graph, getOrderedNeighbours) -> (str, dict, di
                     q.append((v_k, v_i))
             code += str(nodeToLabel[v_k])
     return code, labelToNode, nodeToLabel
+
+
+def approximate_marked_subgraph_isomorphism(G_a: nx.Graph, G_b: nx.Graph, getOrderedNeighbours, getNodeLabel,
+                                            max_hamming_dist: int):
+    """
+    @brief Adaptation of the implementation of the paper [Marked Subgraph Isomorphism of Ordered Graphs]
+    (https://link.springer.com/content/pdf/10.1007%2FBFb0033230.pdf) by Xiaoyi and Bunke.
+    @param G_a Graph that is checked if it is an approximate subgraph of G_b
+    @param G_b Graph
+    @param getOrderedNeighbours Function (graph, node, start_node) that returns an ordered list of ids
+    of neighbour nodes of a given node (starting at the given start_node).
+    @param getNodeLabel Function (node) returning the label of the node
+    @param max_hamming_dist Maximum hamming-distances (difference in node-labels) to accept a subgrpah
+    @return All found approximated subgraphs within the hamming distance threshold as tuples (nodes + hamming distance)
+    """
+    code_ga = generate_graph_code(G_a, getOrderedNeighbours)
+    result = []
+    # create a code for each directed edge v_i, v_j
+    for edge in G_b.edges:
+        # check for both u,v and v,u
+        for v_ip, v_jp in [edge, (edge[1], edge[0])]:
+            q = deque()
+            relabel_id = 1
+            labelToNode = {}
+            nodeToLabel = {}
+            used_nodes = dict.fromkeys(G_b.nodes, False)
+            s = []
+            code = ""
+            q.append((v_ip, v_jp))
+            used_nodes[v_ip] = True
+            nodeToLabel[v_ip] = relabel_id
+            labelToNode[1] = v_ip
+
+            while len(q) > 0:
+                v_i, v_j = q.pop()
+                ordered_neighbours = getOrderedNeighbours(G_b, v_i, v_j)
+                for v_k in ordered_neighbours:
+                    s.append(v_k)
+                    if not used_nodes[v_k]:
+                        used_nodes[v_k] = True
+                        relabel_id += 1
+                        nodeToLabel[v_k] = relabel_id
+                        labelToNode[relabel_id] = v_k
+
+                        # if it is an internal vertex there, we add v_k, v_j to the queue
+                        if len(G_a.edges(code_ga[1][nodeToLabel[v_k]])) > 1:
+                            q.append((v_k, v_i))
+                    code += str(nodeToLabel[v_k])
+                    if len(code) == len(code_ga[0]):
+                        break
+
+            # if codes are not equal, check the next edge
+            if code != code_ga[0]:
+                continue
+
+            # condition 1:
+            condition_met = True
+            for node_a in G_a.nodes:
+                # skip all leaves
+                deg_a = len(G_a.edges(node_a))
+                if deg_a <= 1:
+                    continue
+                if deg_a != len(G_b.edges(labelToNode[code_ga[2][node_a]])):
+                    condition_met = False
+                    break
+
+            # condition 2:
+            hamming_dist = 0
+            matched_nodes = []
+            for u_a, v_a in G_a.edges():
+                found_match = False
+                label_u = code_ga[2][u_a]
+                label_v = code_ga[2][v_a]
+
+                for u_b, v_b in G_b.edges():
+                    if u_b not in nodeToLabel.keys() or v_b not in nodeToLabel.keys():
+                        continue
+                    if nodeToLabel[u_b] == label_u and nodeToLabel[v_b] == label_v and getNodeLabel(G_a, u_a) == \
+                            getNodeLabel(G_b, u_b) and getNodeLabel(G_a, v_a) == getNodeLabel(G_b, v_b):
+                        found_match = True
+                        matched_nodes.append((u_b, v_b))
+                        break
+                if not found_match:
+                    hamming_dist += 1
+
+            if hamming_dist <= max_hamming_dist:
+                result.append((matched_nodes, hamming_dist))
+    return result
 
 
 def marked_subgraph_isomorphism(G_a: nx.Graph, G_b: nx.Graph, getOrderedNeighbours) -> bool:
@@ -108,6 +198,8 @@ def marked_subgraph_isomorphism(G_a: nx.Graph, G_b: nx.Graph, getOrderedNeighbou
                 deg_a = len(G_a.edges(node_a))
                 if deg_a <= 1:
                     continue
+                print("code_ga:", code_ga)
+                print(code_ga[2])
                 if deg_a != len(G_b.edges(labelToNode[code_ga[2][node_a]])):
                     condition_met = False
                     break

@@ -25,6 +25,9 @@ class TestGraphnFunctions(unittest.TestCase):
     def label_change_fun(self, dA, dB):
         return self.label_change(dA['type'], dB['type'])
 
+    def get_node_label(self, graph, dA):
+        return graph.nodes(data=True)[dA]['type']
+
     def angle(self, dCenter, dA):
         x, y = dA[0] - dCenter
         angle = np.arctan2(x, y)
@@ -148,6 +151,53 @@ class TestGraphnFunctions(unittest.TestCase):
         c.add_edge(38, 35)
 
         self.assertTrue(graphn.marked_subgraph_isomorphism(b, c, self.ordered_neighbours))
+
+    def test_ApproximationOfSubgraphGivesCorrectResult(self) -> None:
+        a = nx.Graph()
+        a.add_node(0, pos=np.asarray([1, 0]), type=1)
+        a.add_node(1, pos=np.asarray([2, 0]), type=2)
+        a.add_node(2, pos=np.asarray([0, 0]), type=1)
+        a.add_edge(0, 1)
+        a.add_edge(0, 2)
+
+        b = nx.Graph()
+        b.add_node(0, pos=np.asarray([1, 0]), type=1)
+        b.add_node(1, pos=np.asarray([2, 0]), type=1)
+        b.add_node(2, pos=np.asarray([0, 0]), type=1)
+        b.add_edge(0, 1)
+        b.add_edge(0, 2)
+
+        self.assertEqual(0,
+                         len(graphn.approximate_marked_subgraph_isomorphism(a, b, self.ordered_neighbours,
+                                                                            self.get_node_label,
+                                                                            0)))
+
+        self.assertEqual(2,
+                         len(graphn.approximate_marked_subgraph_isomorphism(a, b, self.ordered_neighbours,
+                                                                            self.get_node_label,
+                                                                            1)))
+
+        c = nx.Graph()
+        c.add_node(0, pos=np.asarray([1, 0]), type=2)
+        c.add_node(1, pos=np.asarray([0, 0]), type=2)
+        c.add_edge(0, 1)
+
+        self.assertEqual(4,
+                         len(graphn.approximate_marked_subgraph_isomorphism(c, a, self.ordered_neighbours,
+                                                                            self.get_node_label,
+                                                                            1)))
+
+        d = nx.Graph()
+        d.add_node(0, pos=np.asarray([1, 0]), type=2)
+        d.add_node(1, pos=np.asarray([2, 0]), type=2)
+        d.add_node(2, pos=np.asarray([0, 0]), type=1)
+        d.add_edge(0, 1)
+        d.add_edge(0, 2)
+
+        self.assertEqual(1,
+                         len(graphn.approximate_marked_subgraph_isomorphism(c, d, self.ordered_neighbours,
+                                                                            self.get_node_label,
+                                                                            0)))
 
     def test_GGDReturns0ForIsomorphicGraphs(self) -> None:
         a = nx.Graph()
