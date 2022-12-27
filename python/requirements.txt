@@ -1,6 +1,6 @@
 networkx~=2.6.3
 pip==22.1
-setuptools==62.2.0
+setuptools==65.5.1
 wheel==0.37.1
 numpy~=1.21.3
 cvxpy~=1.1.17
