@@ -314,6 +314,7 @@ def ggd(G_a: nx.Graph, G_b: nx.Graph, dist_func, c_n=1.0, c_e=1.0, verbose=False
             + C_E * cp.sum(L_EP)
             - C_E * (cp.sum(cp.multiply(C_EEP, Eee)))
             + C_L * (cp.sum(cp.multiply(LBL_UV, Vuv))))
+        constraints += [cp.sum(Vuv[:]) >= min(an, bn)]
     else:
         objective = cp.Minimize(
             C_V * cp.sum(cp.multiply(L_UV, Vuv))
