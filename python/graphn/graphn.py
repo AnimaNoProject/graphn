@@ -322,7 +322,5 @@ def ggd(G_a: nx.Graph, G_b: nx.Graph, dist_func, c_n=1.0, c_e=1.0, verbose=False
             - C_E * (cp.sum(cp.multiply(C_EEP, Eee))))
 
     problem = cp.Problem(objective, constraints)
-
     result = problem.solve(solver=cp.SCIPY, verbose=verbose, scipy_options={'eps': eps, 'maxiter': max_iters})
-
     return abs(result)
