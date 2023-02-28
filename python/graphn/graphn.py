@@ -339,26 +339,42 @@ def optimal_sequence_bisection(seq_a, seq_b, C):
     for i in range(m):
         for j in range(n):
             r[i][j] = abs(seq_a[i] - seq_b[j])
+            g.add_node("{},{}".format(i, j))
 
     for i in range(m):
         for j in range(n):
             for k in range(m):
                 for l in range(n):
-                    if i - 1 < k and j - 1 < l:
-                        r[i][j] = np.sqrt((k - i - 1) ** 2 +
-                                          (l - j - 1) ** 2) \
-                                  * C + (seq_a[i] - seq_b[j]) ** 2
-                        g.add_edge("{},{}".format(i, j), "{},{}".format(k, l), weight=r[i][j])
-                    # else:
+                    if i < k and j < l:
+                        src = "{},{}".format(i, j)
+                        dst = "{},{}".format(k, l)
+                        r[i][j] = np.sqrt((k - i - 1) ** 2
+                                          + (l - j - 1) ** 2) * C \
+                                  + (seq_a[i] - seq_b[j]) ** 2
+                        r[i][j] = round(r[i][j], 3)
+                        g.add_edge(src, dst, length=r[i][j])
+                    # else: # other nodes have infinite weight therfore are not visitable
                     #    g.add_edge("{},{}".format(i, j), "{},{}".format(k, l), weight=np.inf)
 
+    best_path = []
+    best_length = np.inf
+    for i in range(m):
+        for j in range(n):
+            src = "{},{}".format(i, j)
+            paths = nx.single_source_dijkstra_path(g, src, weight="length")
+            lengths = nx.single_source_dijkstra_path_length(g, src, weight="length")
+            del paths[src]
+            for dst, path in paths.items():
+                if lengths[dst] <= best_length and len(path) == m:
+                    best_length = lengths[dst]
+                    best_path = path
+
+    print(best_path)
+    print()
+
     nx.draw(g, pos=nx.circular_layout(g))
-    labels = {e: g.edges[e]['weight'] for e in g.edges}
+    labels = {e: g.edges[e]['length'] for e in g.edges}
     nx.draw_networkx_labels(g, pos=nx.circular_layout(g))
     nx.draw_networkx_edge_labels(g, pos=nx.circular_layout(g), edge_labels=labels)
     plt.draw()
     plt.show()
-    print()
-    print(g.edges)
-    print(g.nodes)
-    print(r)

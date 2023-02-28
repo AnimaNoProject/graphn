@@ -316,5 +316,5 @@ class TestGraphnFunctions(unittest.TestCase):
         t1 = [1, 2, 8, 6, 8]
         t2 = [1, 2, 9, 15, 3, 5, 9]
 
-        graphn.optimal_sequence_bisection(t1, t2, 1.15)
+        graphn.optimal_sequence_bisection(t1, t2, 1.0)
         pass
