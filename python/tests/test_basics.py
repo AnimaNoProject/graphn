@@ -311,3 +311,10 @@ class TestGraphnFunctions(unittest.TestCase):
 
         self.assertEqual(2, graphn.ggd(a, b, self.dist_fun, label_dist_func=self.label_change_fun))
         self.assertEqual(4, graphn.ggd(a, b, self.dist_fun, label_dist_func=self.label_change_fun, c_l=2.0))
+
+    def test_OptimalSequenceBisectionShouldGiveCorrectResult(self) -> None:
+        t1 = [1, 2, 8, 6, 8]
+        t2 = [1, 2, 9, 15, 3, 5, 9]
+
+        graphn.optimal_sequence_bisection(t1, t2, 1.15)
+        pass

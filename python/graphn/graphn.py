@@ -2,6 +2,7 @@ import cvxpy as cp
 import numpy as np
 import networkx as nx
 from collections import deque
+import matplotlib.pyplot as plt
 
 
 def generate_graph_code(graph: nx.Graph, getOrderedNeighbours) -> (str, dict, dict):
@@ -325,3 +326,39 @@ def ggd(G_a: nx.Graph, G_b: nx.Graph, dist_func, c_n=1.0, c_e=1.0, verbose=False
     problem = cp.Problem(objective, constraints)
     result = problem.solve(solver=cp.SCIPY, verbose=verbose, scipy_options={'eps': eps, 'maxiter': max_iters})
     return abs(result)
+
+
+def optimal_sequence_bisection(seq_a, seq_b, C):
+    m = len(seq_a)
+    n = len(seq_b)
+    assert (m <= n)
+
+    g = nx.DiGraph()
+    r = np.zeros((m, n)) * np.inf
+
+    for i in range(m):
+        for j in range(n):
+            r[i][j] = abs(seq_a[i] - seq_b[j])
+
+    for i in range(m):
+        for j in range(n):
+            for k in range(m):
+                for l in range(n):
+                    if i - 1 < k and j - 1 < l:
+                        r[i][j] = np.sqrt((k - i - 1) ** 2 +
+                                          (l - j - 1) ** 2) \
+                                  * C + (seq_a[i] - seq_b[j]) ** 2
+                        g.add_edge("{},{}".format(i, j), "{},{}".format(k, l), weight=r[i][j])
+                    # else:
+                    #    g.add_edge("{},{}".format(i, j), "{},{}".format(k, l), weight=np.inf)
+
+    nx.draw(g, pos=nx.circular_layout(g))
+    labels = {e: g.edges[e]['weight'] for e in g.edges}
+    nx.draw_networkx_labels(g, pos=nx.circular_layout(g))
+    nx.draw_networkx_edge_labels(g, pos=nx.circular_layout(g), edge_labels=labels)
+    plt.draw()
+    plt.show()
+    print()
+    print(g.edges)
+    print(g.nodes)
+    print(r)
