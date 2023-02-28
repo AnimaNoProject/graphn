@@ -328,7 +328,15 @@ def ggd(G_a: nx.Graph, G_b: nx.Graph, dist_func, c_n=1.0, c_e=1.0, verbose=False
     return abs(result)
 
 
-def optimal_sequence_bisection(seq_a, seq_b, C):
+def optimal_sequence_bijection(seq_a, seq_b, C=1.0):
+    """
+    @brief Computes the optimal sequence bijection according
+    Latecki et al. Optimal Subsequence Bijection
+    @param seq_a: Sequence a (needs to be shorter or equal to b)
+    @param seq_b: Sequence b (needs to be longer or equal to a)
+    @param C: Jump cost
+    @return: Optimal sequence bijection
+    """
     m = len(seq_a)
     n = len(seq_b)
     assert (m <= n)
@@ -369,12 +377,8 @@ def optimal_sequence_bisection(seq_a, seq_b, C):
                     best_length = lengths[dst]
                     best_path = path
 
-    print(best_path)
-    print()
-
-    nx.draw(g, pos=nx.circular_layout(g))
-    labels = {e: g.edges[e]['length'] for e in g.edges}
-    nx.draw_networkx_labels(g, pos=nx.circular_layout(g))
-    nx.draw_networkx_edge_labels(g, pos=nx.circular_layout(g), edge_labels=labels)
-    plt.draw()
-    plt.show()
+    map_dict = {}
+    for match in best_path:
+        split = match.split(",")
+        map_dict[int(split[0])] = int(split[1])
+    return map_dict
