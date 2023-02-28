@@ -2,6 +2,7 @@ import cvxpy as cp
 import numpy as np
 import networkx as nx
 from collections import deque
+import matplotlib.pyplot as plt
 
 
 def generate_graph_code(graph: nx.Graph, getOrderedNeighbours) -> (str, dict, dict):
@@ -325,3 +326,59 @@ def ggd(G_a: nx.Graph, G_b: nx.Graph, dist_func, c_n=1.0, c_e=1.0, verbose=False
     problem = cp.Problem(objective, constraints)
     result = problem.solve(solver=cp.SCIPY, verbose=verbose, scipy_options={'eps': eps, 'maxiter': max_iters})
     return abs(result)
+
+
+def optimal_sequence_bijection(seq_a, seq_b, C=1.0):
+    """
+    @brief Computes the optimal sequence bijection according
+    Latecki et al. Optimal Subsequence Bijection
+    @param seq_a: Sequence a (needs to be shorter or equal to b)
+    @param seq_b: Sequence b (needs to be longer or equal to a)
+    @param C: Jump cost
+    @return: Optimal sequence bijection
+    """
+    m = len(seq_a)
+    n = len(seq_b)
+    assert (m <= n)
+
+    g = nx.DiGraph()
+    r = np.zeros((m, n)) * np.inf
+
+    for i in range(m):
+        for j in range(n):
+            r[i][j] = abs(seq_a[i] - seq_b[j])
+            g.add_node("{},{}".format(i, j))
+
+    for i in range(m):
+        for j in range(n):
+            for k in range(m):
+                for l in range(n):
+                    if i < k and j < l:
+                        src = "{},{}".format(i, j)
+                        dst = "{},{}".format(k, l)
+                        r[i][j] = np.sqrt((k - i - 1) ** 2
+                                          + (l - j - 1) ** 2) * C \
+                                  + (seq_a[i] - seq_b[j]) ** 2
+                        r[i][j] = round(r[i][j], 3)
+                        g.add_edge(src, dst, length=r[i][j])
+                    # else: # other nodes have infinite weight therfore are not visitable
+                    #    g.add_edge("{},{}".format(i, j), "{},{}".format(k, l), weight=np.inf)
+
+    best_path = []
+    best_length = np.inf
+    for i in range(m):
+        for j in range(n):
+            src = "{},{}".format(i, j)
+            paths = nx.single_source_dijkstra_path(g, src, weight="length")
+            lengths = nx.single_source_dijkstra_path_length(g, src, weight="length")
+            del paths[src]
+            for dst, path in paths.items():
+                if lengths[dst] <= best_length and len(path) == m:
+                    best_length = lengths[dst]
+                    best_path = path
+
+    map_dict = {}
+    for match in best_path:
+        split = match.split(",")
+        map_dict[int(split[0])] = int(split[1])
+    return map_dict
