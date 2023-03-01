@@ -2,7 +2,7 @@ import cvxpy as cp
 import numpy as np
 import networkx as nx
 from collections import deque
-import matplotlib.pyplot as plt
+from typing import Optional
 
 
 def generate_graph_code(graph: nx.Graph, getOrderedNeighbours) -> (str, dict, dict):
@@ -328,13 +328,13 @@ def ggd(G_a: nx.Graph, G_b: nx.Graph, dist_func, c_n=1.0, c_e=1.0, verbose=False
     return abs(result)
 
 
-def optimal_sequence_bijection(seq_a, seq_b, C=1.0):
+def optimal_sequence_bijection(seq_a, seq_b, C: Optional[float] = None):
     """
     @brief Computes the optimal sequence bijection according
     Latecki et al. Optimal Subsequence Bijection
     @param seq_a: Sequence a (needs to be shorter or equal to b)
     @param seq_b: Sequence b (needs to be longer or equal to a)
-    @param C: Jump cost
+    @param C: Optional jump cost, if none is given it is automatically computed based on the input
     @return: Optimal sequence bijection
     """
     m = len(seq_a)
@@ -349,6 +349,13 @@ def optimal_sequence_bijection(seq_a, seq_b, C=1.0):
             r[i][j] = abs(seq_a[i] - seq_b[j])
             g.add_node("{},{}".format(i, j))
 
+    jump_cost = 1.0
+    if C is None:
+        min_value = np.amin(r, axis=1)
+        jump_cost = np.mean(min_value) + np.std(min_value)
+    else:
+        jump_cost = C
+
     for i in range(m):
         for j in range(n):
             for k in range(m):
@@ -357,7 +364,7 @@ def optimal_sequence_bijection(seq_a, seq_b, C=1.0):
                         src = "{},{}".format(i, j)
                         dst = "{},{}".format(k, l)
                         r[i][j] = np.sqrt((k - i - 1) ** 2
-                                          + (l - j - 1) ** 2) * C \
+                                          + (l - j - 1) ** 2) * jump_cost \
                                   + (seq_a[i] - seq_b[j]) ** 2
                         r[i][j] = round(r[i][j], 3)
                         g.add_edge(src, dst, length=r[i][j])
